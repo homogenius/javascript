@@ -24,7 +24,7 @@ describe('keys', function () {
   });
 
   it('should be the same as nested JSON object', function() {
-    assert.deepEqual([{'key1': 'number'}, {'key2': [{'nested_key1': 'string'}, {'nested_key2': 'boolean'}]}, {'key3': 'string'}], homogenius().pack(sample_nested_json)[0]);
+    assert.deepEqual([{'key1': 2}, {'key2': [{'nested_key1': 1}, {'nested_key2': 3}]}, {'key3': 1}], homogenius().pack(sample_nested_json)[0]);
   });
 
   it('should extract nested keys from JSON object', function() {

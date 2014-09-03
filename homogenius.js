@@ -86,20 +86,28 @@
   function _getUniqueValueIndex (uniqueValues, value, blockIndex) {
     var tempUniqueValues = null;
     for (var i = 0; i < blockIndex.length; i++) {
-      tempUniqueValues = uniqueValues[blockIndex[i]];
+      tempUniqueValues = (tempUniqueValues || uniqueValues)[blockIndex[i]];
+
+      //check if there in no array for this unique value
+      if (typeof (tempUniqueValues) != 'object') {
+        tempUniqueValues = [];
+
+        if (i > 0) {
+          //block index is nested
+          uniqueValues[blockIndex[i - 1]].push(tempUniqueValues);
+        } else {
+          uniqueValues.push(tempUniqueValues);
+        }
+      }
     }
 
-    //check if there in no array for this unique value
-    if (typeof (tempUniqueValues) != 'object') {
-      tempUniqueValues = [];
-      uniqueValues.push(tempUniqueValues);
-    }
-
+    //lookup the index of value
     var uniqueValueIndex = tempUniqueValues.indexOf(value);
 
     if (uniqueValueIndex > -1) {
       return uniqueValueIndex;
     } else {
+      //or add the value to the unique array
       return tempUniqueValues.push(value) - 1;
     }
   }
@@ -111,17 +119,24 @@
    * @param {Array} uniqueValues
    * @param {Array} schemaRow
    */
-  function _packValue (dataRow, uniqueValues, schemaRow) {
+  function _packValue (dataRow, uniqueValues, schemaRow, parentIndex) {
     var values = [];
 
     var currentSchema = schemaRow || this._schema;
     for (var i = 0; i < currentSchema.length; i++) {
       //TODO: this loop is used to extract the key/value from schema item, do we need it?
       for (var schemaKey in currentSchema[i]) {
-        if (typeof (currentSchema[i][schemaKey]) != 'object') {
-          values.push(_getUniqueValueIndex.call(this, uniqueValues, dataRow[schemaKey], [i]));
+        if (typeof(currentSchema[i][schemaKey]) != 'object') {
+
+          var blockIndex = [];
+          if (typeof(parentIndex) != 'undefined') {
+            blockIndex.push(parentIndex);
+          }
+          blockIndex.push(i);
+
+          values.push(_getUniqueValueIndex.call(this, uniqueValues, dataRow[schemaKey], blockIndex));
         } else {
-          values.push(_packValue.call(this, dataRow[schemaKey], currentSchema[i][schemaKey]));
+          values.push(_packValue.call(this, dataRow[schemaKey], uniqueValues, currentSchema[i][schemaKey], i));
         }
       }
     }
