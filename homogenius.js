@@ -17,23 +17,31 @@
     //set schema to null
     this._schema = null;
 
-    this._options = {};
+    //data types
+    this._dataType = {
+      'object': 0,
+      'string': 1,
+      'number': 2,
+      'boolean': 3
+    };
   };
 
   /**
    * To extract keys from JSON object
    *
-   * @param {Object} json_obj
+   * @param {Object} jsonObj
    */
-  function _extractKeys (json_obj) {
+  function _extractKeys (jsonObj) {
     var keys = [];
-    for (var item in json_obj) {
+    for (var item in jsonObj) {
 
       var itemValue = {};
-      if (json_obj[item] instanceof Object) {
-        itemValue[item] = _extractKeys(json_obj[item]);
+      if (jsonObj[item] instanceof Object) {
+        //nested object
+        itemValue[item] = _extractKeys.call(this, jsonObj[item]);
       } else {
-        itemValue[item] = typeof(json_obj[item]);
+        //add schema key and data type
+        itemValue[item] = this._dataType[typeof(jsonObj[item])];
       }
 
       keys.push(itemValue);
@@ -45,7 +53,7 @@
   /**
    * To set the schema of JSON object
    *
-   * @param {Object} schema
+   * @param {Array} schema
    */
   function _setSchema (schema) {
     if (schema instanceof Object) {
@@ -56,9 +64,9 @@
   }
 
   /**
-   * To set the default schema
+   * To set the default schema from given data array
    *
-   * @param {Object} data
+   * @param {Array} data
    */
   function _setDefaultSchema (data) {
     _setSchema.call(this,
@@ -68,18 +76,52 @@
                    );
   }
 
+  /**
+   * Returns the index of unique value or create it if does not exist
+   *
+   * @param {Array} uniqueValues
+   * @param {Object|Number|String|Boolean} value
+   * @param {Array} blockIndex
+   */
+  function _getUniqueValueIndex (uniqueValues, value, blockIndex) {
+    var tempUniqueValues = null;
+    for (var i = 0; i < blockIndex.length; i++) {
+      tempUniqueValues = uniqueValues[blockIndex[i]];
+    }
 
-  function _packValue (data_row, schema_row) {
+    //check if there in no array for this unique value
+    if (typeof (tempUniqueValues) != 'object') {
+      tempUniqueValues = [];
+      uniqueValues.push(tempUniqueValues);
+    }
+
+    var uniqueValueIndex = tempUniqueValues.indexOf(value);
+
+    if (uniqueValueIndex > -1) {
+      return uniqueValueIndex;
+    } else {
+      return tempUniqueValues.push(value) - 1;
+    }
+  }
+
+  /**
+   * Packs a single value
+   *
+   * @param {Array} dataRow
+   * @param {Array} uniqueValues
+   * @param {Array} schemaRow
+   */
+  function _packValue (dataRow, uniqueValues, schemaRow) {
     var values = [];
 
-    var currentSchema = schema_row || this._schema;
-    for (var i = 0; i <= currentSchema.length; i++) {
+    var currentSchema = schemaRow || this._schema;
+    for (var i = 0; i < currentSchema.length; i++) {
       //TODO: this loop is used to extract the key/value from schema item, do we need it?
-      for (var schema_key in currentSchema[i]) {
-        if (typeof (currentSchema[i][schema_key]) != 'object') {
-          values.push(data_row[schema_key]);
+      for (var schemaKey in currentSchema[i]) {
+        if (typeof (currentSchema[i][schemaKey]) != 'object') {
+          values.push(_getUniqueValueIndex.call(this, uniqueValues, dataRow[schemaKey], [i]));
         } else {
-          values.push(_packValue.call(this, data_row[schema_key], currentSchema[i][schema_key]));
+          values.push(_packValue.call(this, dataRow[schemaKey], currentSchema[i][schemaKey]));
         }
       }
     }
@@ -90,6 +132,7 @@
   /**
    * Pack given JSON object to Homogenius form
    *
+   * @param {Array} data
    */
   function _pack (data) {
     //set default schema if there is not schema
@@ -102,10 +145,13 @@
     //add schema to the packed json
     packed_json.push(this._schema);
 
+    //add unique values array
+    packed_json.push([]);
+
     //first loop for array items
     for (var array_item in data) {
       //add each object to the packed array
-      packed_json.push(_packValue.call(this, data[array_item]));
+      packed_json.push(_packValue.call(this, data[array_item], packed_json[1]));
     }
 
     return packed_json;
