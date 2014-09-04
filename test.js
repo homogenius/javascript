@@ -2,13 +2,23 @@
 
 //normal json file
 [
-  //keys
-  ['boo', 'foo', 'bar'],
-  //unique values
-  [['val1'], ['val2'], ['val3']]
-  //values
-  [0, 0, 0],
-  [0, 0, 0]
+    //keys
+    [{
+        "boo": 1
+    }, {
+        "foo": 1
+    }, {
+        "bar": 1
+    }],
+    //unique values
+    [
+        ["val1"],
+        ["val2"],
+        ["val3"]
+    ],
+    //values
+    [0, 0, 0],
+    [0, 0, 0]
 ]
 
 
@@ -25,11 +35,30 @@
 
 //json file with nested values
 [
-  //keys
-  ['boo', 'nested', ['boo_nested', 'foo_nested', 'bar_nested'], 'bar'],
-  //values
-  ['val1', ['val_nested1', 'val_nested2', 'val_nested3'], 'val2'],
-  ['val1', ['val_nested1', 'val_nested2', 'val_nested3'], 'val2']
+    [{
+        "boo": 1
+    }, {
+        "nested": [{
+            "boo_nested": 1
+        }, {
+            "foo_nested": 1
+        }, {
+            "bar_nested": 1
+        }]
+    }, {
+        "bar": 1
+    }],
+    [
+        ["val1"],
+        [
+            ["val_nested1"],
+            ["val_nested2"],
+            ["val_nested3"]
+        ],
+        ["val2"]
+    ],
+    [0, [0, 0, 0], 0],
+    [0, [0, 0, 0], 0]
 ]
 
 

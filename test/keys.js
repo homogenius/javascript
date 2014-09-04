@@ -31,3 +31,9 @@ describe('keys', function () {
     assert.equal(3, homogenius().pack(sample_nested_json)[0].length);
   });
 });
+
+describe('pack/unpack', function () {
+  it('should work with linear objects', function () {
+    assert.deepEqual(homogenius().unpack(homogenius().pack(sample_json)), sample_json);
+  });
+});

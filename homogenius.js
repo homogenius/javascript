@@ -155,22 +155,60 @@
       _setDefaultSchema.call(this, data);
     }
 
-    var packed_json = [];
+    var packedJson = [];
 
     //add schema to the packed json
-    packed_json.push(this._schema);
+    packedJson.push(this._schema);
 
     //add unique values array
-    packed_json.push([]);
+    packedJson.push([]);
 
     //first loop for array items
     for (var array_item in data) {
       //add each object to the packed array
-      packed_json.push(_packValue.call(this, data[array_item], packed_json[1]));
+      packedJson.push(_packValue.call(this, data[array_item], packedJson[1]));
     }
 
-    return packed_json;
+    return packedJson;
   };
+
+  function _getFromUniqueValues (uniqueValueIndex, uniqueValues, blockIndex) {
+    return uniqueValues[blockIndex][uniqueValueIndex];
+  }
+
+  function _unpackValue (dataRow, uniqueValues) {
+    var unpackedRow = {};
+    var currentSchema = this._schema;
+    for (var i = 0; i < currentSchema.length; i++) {
+      for (var schemaKey in currentSchema[i]) {
+
+        if (typeof(currentSchema[i][schemaKey]) == 'object') {
+          //nested
+        } else {
+          unpackedRow[schemaKey] = _getFromUniqueValues.call(this, dataRow[i], uniqueValues, i);
+        }
+      }
+    }
+    return unpackedRow;
+  }
+
+  function _unpack (packedJson) {
+    //set schema
+    var schema = this._schema = packedJson[0];
+    //get uniquevalues array
+    var uniqueValues = packedJson[1];
+    //packed values array
+    var values = packedJson.slice(2, packedJson.length);
+
+    var unpackedJson = [];
+    for (var i = 0;i < values.length;i++) {
+      var currentPackedRow = values[i];
+
+      unpackedJson.push(_unpackValue.call(this, currentPackedRow, uniqueValues));
+    }
+
+    return unpackedJson;
+  }
 
   var homogenius = function () {
     return new Homogenius();
@@ -185,6 +223,9 @@
     },
     pack: function (data) {
       return _pack.call(this, data);
+    },
+    unpack: function (data) {
+      return _unpack.call(this, data);
     },
     setSchema: function (schema) {
       _setSchema.call(this, schema);
