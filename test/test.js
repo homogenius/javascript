@@ -33,7 +33,11 @@ describe('keys', function () {
 });
 
 describe('pack/unpack', function () {
-  it('should work with linear objects', function () {
+  it('should work with objects', function () {
     assert.deepEqual(homogenius().unpack(homogenius().pack(sample_json)), sample_json);
+  });
+
+  it('should work with nested objects', function () {
+    assert.deepEqual(homogenius().unpack(homogenius().pack(sample_nested_json)), sample_nested_json);
   });
 });

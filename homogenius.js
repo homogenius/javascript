@@ -85,7 +85,7 @@
    */
   function _getUniqueValueIndex (uniqueValues, value, blockIndex) {
     var tempUniqueValues = null;
-    for (var i = 0; i < blockIndex.length; i++) {
+    for (var i = 0, blocksLength = blockIndex.length; i < blocksLength; i++) {
       tempUniqueValues = (tempUniqueValues || uniqueValues)[blockIndex[i]];
 
       //check if there in no array for this unique value
@@ -123,7 +123,7 @@
     var values = [];
 
     var currentSchema = schemaRow || this._schema;
-    for (var i = 0; i < currentSchema.length; i++) {
+    for (var i = 0, schemaLength = currentSchema.length; i < schemaLength; i++) {
       //TODO: this loop is used to extract the key/value from schema item, do we need it?
       for (var schemaKey in currentSchema[i]) {
         if (typeof(currentSchema[i][schemaKey]) != 'object') {
@@ -164,34 +164,67 @@
     packedJson.push([]);
 
     //first loop for array items
-    for (var array_item in data) {
+    for (var i = 0, dataLength = data.length; i < dataLength; i++) {
       //add each object to the packed array
-      packedJson.push(_packValue.call(this, data[array_item], packedJson[1]));
+      packedJson.push(_packValue.call(this, data[i], packedJson[1]));
     }
 
     return packedJson;
   };
 
+  /**
+   * Convert unique index to actual data
+   *
+   * @param {Number} uniqueValueIndex
+   * @param {Array} uniqueValues
+   * @param {Array} blockIndex
+   */
   function _getFromUniqueValues (uniqueValueIndex, uniqueValues, blockIndex) {
-    return uniqueValues[blockIndex][uniqueValueIndex];
+
+    var currentUniqueValues = null;
+    for (var i = 0, blocksLength = blockIndex.length; i < blocksLength; i++) {
+      currentUniqueValues = (currentUniqueValues || uniqueValues)[blockIndex[i]];
+    }
+
+    return currentUniqueValues[uniqueValueIndex];
   }
 
-  function _unpackValue (dataRow, uniqueValues) {
+  /**
+   * Unpacks a single row to data
+   *
+   * @param {Array} dataRow
+   * @param {Array} uniqueValues
+   * @param {Array} schemaRow
+   * @param {Number} parentIndex
+   */
+  function _unpackValue (dataRow, uniqueValues, schemaRow, parentIndex) {
     var unpackedRow = {};
-    var currentSchema = this._schema;
+    var currentSchema = schemaRow || this._schema;
     for (var i = 0; i < currentSchema.length; i++) {
       for (var schemaKey in currentSchema[i]) {
 
         if (typeof(currentSchema[i][schemaKey]) == 'object') {
           //nested
+          unpackedRow[schemaKey] = _unpackValue.call(this, dataRow[i], uniqueValues, currentSchema[i][schemaKey], i);
         } else {
-          unpackedRow[schemaKey] = _getFromUniqueValues.call(this, dataRow[i], uniqueValues, i);
+          var blockIndex = [];
+          if (typeof(parentIndex) != 'undefined') {
+            blockIndex.push(parentIndex);
+          }
+          blockIndex.push(i);
+
+          unpackedRow[schemaKey] = _getFromUniqueValues.call(this, dataRow[i], uniqueValues, blockIndex);
         }
       }
     }
     return unpackedRow;
   }
 
+  /**
+   * Unpacks a list of rows to data
+   *
+   * @param {Array} packedJson
+   */
   function _unpack (packedJson) {
     //set schema
     var schema = this._schema = packedJson[0];
@@ -202,9 +235,8 @@
 
     var unpackedJson = [];
     for (var i = 0;i < values.length;i++) {
-      var currentPackedRow = values[i];
-
-      unpackedJson.push(_unpackValue.call(this, currentPackedRow, uniqueValues));
+      //pass current row with block indexes + unique values array
+      unpackedJson.push(_unpackValue.call(this, values[i], uniqueValues));
     }
 
     return unpackedJson;
