@@ -30,6 +30,14 @@ describe('keys', function () {
   it('should extract nested keys from JSON object', function() {
     assert.equal(3, homogenius().pack(sample_nested_json)[0].length);
   });
+
+  it('should extract keys with manual schema', function() {
+    assert.equal(2, homogenius().setSchema([{'key1': 2}, {'key2': 1}]).pack(sample_json)[0].length);
+  });
+
+  it('should be the same with manual schema', function() {
+    assert.deepEqual([{'key1': 2}, {'key2': 1}], homogenius().setSchema([{'key1': 2}, {'key2': 1}]).pack(sample_json)[0]);
+  });
 });
 
 describe('pack/unpack', function () {
