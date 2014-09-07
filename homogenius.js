@@ -83,12 +83,14 @@
    * @param {Object|Number|String|Boolean} value
    * @param {Array} blockIndex
    */
-  function _getUniqueValueIndex (uniqueValues, value, blockIndex) {
+  function _getUniqueValueIndex (uniqueValues, value, blockIndex, dataType) {
     var tempUniqueValues = null;
+
+    //iterate to find correct address
     for (var i = 0, blocksLength = blockIndex.length; i < blocksLength; i++) {
       tempUniqueValues = (tempUniqueValues || uniqueValues)[blockIndex[i]];
 
-      //check if there in no array for this unique value
+      //check if there is no array for this unique value
       if (typeof (tempUniqueValues) != 'object') {
         tempUniqueValues = [];
 
@@ -99,6 +101,11 @@
           uniqueValues.push(tempUniqueValues);
         }
       }
+    }
+
+    //skip object data type for now
+    if (dataType == this._dataType.object) {
+      return value;
     }
 
     //lookup the index of value
@@ -127,15 +134,15 @@
       //TODO: this loop is used to extract the key/value from schema item, do we need it?
       for (var schemaKey in currentSchema[i]) {
         if (typeof(currentSchema[i][schemaKey]) != 'object') {
-
           var blockIndex = [];
           if (typeof(parentIndex) != 'undefined') {
             blockIndex.push(parentIndex);
           }
           blockIndex.push(i);
 
-          values.push(_getUniqueValueIndex.call(this, uniqueValues, dataRow[schemaKey], blockIndex));
+          values.push(_getUniqueValueIndex.call(this, uniqueValues, dataRow[schemaKey], blockIndex, currentSchema[i][schemaKey]));
         } else {
+          //nested
           values.push(_packValue.call(this, dataRow[schemaKey], uniqueValues, currentSchema[i][schemaKey], i));
         }
       }
@@ -179,7 +186,12 @@
    * @param {Array} uniqueValues
    * @param {Array} blockIndex
    */
-  function _getFromUniqueValues (uniqueValueIndex, uniqueValues, blockIndex) {
+  function _getFromUniqueValues (uniqueValueIndex, uniqueValues, blockIndex, dataType) {
+
+    //for object data types
+    if (dataType == this._dataType.object) {
+      return uniqueValueIndex;
+    }
 
     var currentUniqueValues = null;
     for (var i = 0, blocksLength = blockIndex.length; i < blocksLength; i++) {
@@ -213,7 +225,7 @@
           }
           blockIndex.push(i);
 
-          unpackedRow[schemaKey] = _getFromUniqueValues.call(this, dataRow[i], uniqueValues, blockIndex);
+          unpackedRow[schemaKey] = _getFromUniqueValues.call(this, dataRow[i], uniqueValues, blockIndex, currentSchema[i][schemaKey]);
         }
       }
     }
